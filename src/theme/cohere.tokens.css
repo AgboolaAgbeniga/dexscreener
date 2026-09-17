@@ -1,0 +1,53 @@
+/**
+ * Cohere Design Tokens (Base / Light & Canonical)
+ * Derived from Cohere 2026 Design System (DESIGN-cohere.md)
+ */
+:root {
+  /* Brand & Accent */
+  --cohere-black: #000000;
+  --cohere-primary: #17171c;
+  --cohere-deep-green: #003c33;
+  --cohere-dark-navy: #071829;
+  --cohere-action-blue: #1863dc;
+  --cohere-focus-blue: #4c6ee6;
+  --cohere-coral: #ff7759;
+  --cohere-coral-soft: #ffad9b;
+  --cohere-form-focus: #9b60aa;
+  --cohere-error: #b30000;
+
+  /* Light Surface & Canvas */
+  --cohere-canvas: #ffffff;
+  --cohere-soft-stone: #eeece7;
+  --cohere-pale-green: #edfce9;
+  --cohere-pale-blue: #f1f5ff;
+  --cohere-card-border: #f2f2f2;
+  --cohere-border-light: #e5e7eb;
+  --cohere-hairline: #d9d9dd;
+
+  /* Typography & Neutral Colors */
+  --cohere-ink: #212121;
+  --cohere-muted: #93939f;
+  --cohere-slate: #75758a;
+  --cohere-body-muted: #616161;
+  --cohere-on-primary: #ffffff;
+  --cohere-on-dark: #ffffff;
+
+  /* Radii */
+  --cohere-radius-xs: 4px;
+  --cohere-radius-sm: 8px;
+  --cohere-radius-md: 16px;
+  --cohere-radius-lg: 22px;
+  --cohere-radius-xl: 30px;
+  --cohere-radius-pill: 32px;
+  --cohere-radius-full: 9999px;
+
+  /* Typography */
+  --cohere-font-display: 'CohereText', 'Unica77 Cohere Web', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, monospace;
+  --cohere-font-sans: 'Unica77 Cohere Web', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --cohere-font-mono: 'CohereMono', 'JetBrains Mono', 'Fira Code', monospace;
+
+  /* Status Colors for backward-compatibility */
+  --status-safe: #10b981;
+  --status-caution: #f59e0b;
+  --status-trap: #ef4444;
+}

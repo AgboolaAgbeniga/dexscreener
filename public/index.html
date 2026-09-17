@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEXScreener Top Gainers &amp; Trap Inspector</title>
+  <meta name="description" content="Real-time DEXScreener top gainers dashboard with automated multi-vector honeypot, rug pull, and trap inspection.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="dark-theme">
+  <!-- Background Ambient Glows -->
+  <div class="glow-orb orb-purple"></div>
+  <div class="glow-orb orb-cyan"></div>
+  <div class="glow-orb orb-amber"></div>
+
+  <!-- Top Navigation Bar -->
+  <header class="navbar">
+    <div class="brand-container">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-titles">
+        <h1 class="brand-title">DEX<span class="gradient-text">INSPECTOR</span></h1>
+        <p class="brand-subtitle">Top Gainers &bull; Multi-Vector Trap Defense</p>
+      </div>
+    </div>
+
+    <!-- Live Stream Status & Global Stats -->
+    <div class="nav-controls">
+      <div class="sse-status-badge" id="sseBadge">
+        <span class="pulse-dot"></span>
+        <span class="status-label" id="sseLabel">STREAM CONNECTING</span>
+      </div>
+      <button class="nav-btn-legit" id="openLegitModalBtn" title="View Saved Legit Tokens in Vault">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+        </svg>
+        <span>Legit Vault</span>
+        <span class="legit-counter-badge" id="navLegitBadge">0</span>
+      </button>
+      <button class="refresh-btn" id="manualRefreshBtn" title="Force Refresh">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main App Container -->
+  <main class="main-content">
+    
+    <!-- Hero Header / Deep Scanner Bar -->
+    <section class="scanner-hero">
+      <div class="hero-left">
+        <h2 class="hero-heading">Spot Legitimate Gems. <span class="highlight-trap">Evade Deadly Traps.</span></h2>
+        <p class="hero-desc">
+          Automated multi-vector inspection checking honeypot logic, unrevoked mint/freeze authorities, tax traps, and whale concentration across trending DEX pairs.
+        </p>
+      </div>
+
+      <!-- Quick Address Deep-Scan Bar -->
+      <div class="quick-scan-container">
+        <form id="quickScanForm" class="scan-form">
+          <div class="scan-input-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <input 
+              type="text" 
+              id="scanAddressInput" 
+              class="scan-input" 
+              placeholder="Paste Token Mint or Pair Contract Address to inspect..." 
+              required
+              autocomplete="off"
+              spellcheck="false"
+            />
+            <button type="submit" class="scan-submit-btn" id="scanSubmitBtn">
+              <span class="btn-text">Deep Scan</span>
+              <div class="btn-spinner" id="scanBtnSpinner"></div>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- Real-time Metrics Dashboard Ribbon -->
+    <section class="metrics-ribbon">
+      <div class="metric-card">
+        <div class="metric-icon-box cyan-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+        </div>
+        <div class="metric-data">
+          <span class="metric-value" id="metricTotal">--</span>
+          <span class="metric-title">Trending Scanned</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon-box green-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div class="metric-data">
+          <span class="metric-value text-green" id="metricSafe">--</span>
+          <span class="metric-title">Verified Safe (≥80)</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon-box red-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/>
+            <line x1="12" y1="8" x2="12" y2="12"/>
+            <line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+        </div>
+        <div class="metric-data">
+          <span class="metric-value text-red" id="metricTraps">--</span>
+          <span class="metric-title">Dangerous Traps (<50)</span>
+        </div>
+      </div>
+
+      <div class="metric-card">
+        <div class="metric-icon-box purple-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+          </svg>
+        </div>
+        <div class="metric-data">
+          <span class="metric-value text-purple" id="metricAvgGain">--%</span>
+          <span class="metric-title">Top 24h Momentum</span>
+        </div>
+      </div>
+
+      <div class="metric-card metric-card-legit" id="metricCardLegit" style="cursor: pointer;" title="Click to view Legit Vault">
+        <div class="metric-icon-box action-box">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <div class="metric-data">
+          <span class="metric-value text-action" id="metricLegitCount">0</span>
+          <span class="metric-title">Saved Legit (Vault)</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Control Bar: Chain Selectors & Filters -->
+    <section class="toolbar-section">
+      <!-- Chain Tabs -->
+      <div class="chain-tabs" id="chainTabs">
+        <button class="chain-tab active" data-chain="solana">
+          <span class="chain-badge-icon">🟣</span>
+          <span class="chain-name">Solana</span>
+        </button>
+        <button class="chain-tab" data-chain="base">
+          <span class="chain-badge-icon">🔵</span>
+          <span class="chain-name">Base</span>
+        </button>
+        <button class="chain-tab" data-chain="ethereum">
+          <span class="chain-badge-icon">🔷</span>
+          <span class="chain-name">Ethereum</span>
+        </button>
+        <button class="chain-tab" data-chain="bsc">
+          <span class="chain-badge-icon">🟡</span>
+          <span class="chain-name">BNB Chain</span>
+        </button>
+      </div>
+
+      <!-- Filter Controls -->
+      <div class="filter-controls">
+        <div class="filter-pills" id="filterPills">
+          <button class="filter-pill active" data-filter="all">All Tokens</button>
+          <button class="filter-pill filter-safe" data-filter="safe">Safe (≥80)</button>
+          <button class="filter-pill filter-caution" data-filter="caution">Caution (50-79)</button>
+          <button class="filter-pill filter-trap" data-filter="trap">Traps (<50)</button>
+        </div>
+
+        <div class="min-gain-wrap">
+          <label for="minGainSelect" class="filter-label">Min 24h Gain:</label>
+          <select id="minGainSelect" class="filter-select">
+            <option value="0">All Gains (0%+)</option>
+            <option value="20">+20%</option>
+            <option value="50">+50%</option>
+            <option value="100">+100%</option>
+            <option value="500">+500%</option>
+          </select>
+        </div>
+      </div>
+    </section>
+
+    <!-- Error Banner Container -->
+    <div id="errorBanner" class="error-banner hidden">
+      <div class="error-content">
+        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+        </svg>
+        <span id="errorMessage">Upstream service connection interrupted.</span>
+      </div>
+      <div class="error-countdown" id="errorCountdown">Retrying in 10s...</div>
+    </div>
+
+    <!-- Live Gainers Data Table -->
+    <section class="table-container">
+      <div class="table-responsive">
+        <table class="gainers-table" id="gainersTable">
+          <thead>
+            <tr>
+              <th class="th-token">Token &amp; Pair</th>
+              <th class="th-num">Price (USD)</th>
+              <th class="th-num">24h Gain</th>
+              <th class="th-num">Volume 24h</th>
+              <th class="th-num">Liquidity</th>
+              <th class="th-num">Buys / Sells</th>
+              <th class="th-score">Safety Score</th>
+              <th class="th-badge">Risk Badge</th>
+              <th class="th-action">Inspect</th>
+            </tr>
+          </thead>
+          <tbody id="gainersTableBody">
+            <!-- Skeleton Rows initially injected by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div id="emptyState" class="empty-state hidden">
+        <div class="empty-icon">🔍</div>
+        <h3>No tokens match the active filters</h3>
+        <p>Try switching filter tabs or lowering the minimum gain threshold.</p>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Deep Scan & Checklist Modal Drawer -->
+  <div class="modal-overlay hidden" id="inspectModalOverlay">
+    <div class="modal-drawer" id="inspectModalDrawer">
+      <div class="modal-header">
+        <div class="modal-token-header">
+          <div class="modal-token-identity">
+            <span class="modal-token-symbol" id="mTokenSymbol">TOKEN</span>
+            <span class="modal-token-name" id="mTokenName">Token Name</span>
+            <span class="modal-chain-badge" id="mChainBadge">SOLANA</span>
+          </div>
+          <p class="modal-token-addr" id="mTokenAddress">Address</p>
+        </div>
+        <button class="modal-close-btn" id="mCloseBtn" title="Close Modal">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Score Summary Gauge Bar -->
+        <div class="modal-score-banner" id="mScoreBanner">
+          <div class="score-circle-wrap">
+            <svg class="score-circle-svg" viewBox="0 0 100 100">
+              <circle class="score-circle-bg" cx="50" cy="50" r="42"/>
+              <circle class="score-circle-fill" id="mScoreCircle" cx="50" cy="50" r="42"/>
+            </svg>
+            <div class="score-circle-text">
+              <span class="score-number" id="mScoreValue">--</span>
+              <span class="score-out-of">/100</span>
+            </div>
+          </div>
+          <div class="score-verdict-box">
+            <div class="score-badge-large" id="mBadgeLarge">SAFE</div>
+            <h4 class="verdict-title" id="mVerdictTitle">High Safety Confidence</h4>
+            <p class="verdict-desc" id="mVerdictDesc">Contract code passed honeypot simulation, liquidity floor, and authority restrictions.</p>
+          </div>
+        </div>
+
+        <!-- Token Market & Pool Stats Grid -->
+        <div class="modal-stats-grid">
+          <div class="mstat-item">
+            <span class="mstat-label">Price USD</span>
+            <span class="mstat-val" id="mPriceUsd">$0.00</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">24h Gain</span>
+            <span class="mstat-val text-green" id="mGain24">+0%</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">Liquidity</span>
+            <span class="mstat-val" id="mLiquidity">$0</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">FDV</span>
+            <span class="mstat-val" id="mFdv">$0</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">24h Volume</span>
+            <span class="mstat-val" id="mVolume">$0</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">Txn Buys/Sells</span>
+            <span class="mstat-val" id="mTxns">0 / 0</span>
+          </div>
+        </div>
+
+        <!-- Trap Detection Checklist -->
+        <div class="modal-section-title">
+          <span>Multi-Vector Trap Checklist</span>
+          <span class="section-subtitle">Automated contract and liquidity audit</span>
+        </div>
+
+        <div class="checklist-container" id="mChecklistContainer">
+          <!-- Dynamically populated checklist items -->
+        </div>
+
+        <!-- Deductions & Score Breakdown Table -->
+        <div class="modal-section-title" style="margin-top: 1.5rem;">
+          <span>Score Deductions Breakdown</span>
+        </div>
+        <div class="breakdown-table-wrap">
+          <table class="breakdown-table">
+            <thead>
+              <tr>
+                <th>Inspection Vector</th>
+                <th>Standard Weight</th>
+                <th>Penalty Deducted</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="mBreakdownTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- External Links & Actions -->
+        <div class="modal-footer-actions">
+          <a href="#" target="_blank" rel="noopener noreferrer" class="ext-btn btn-dex" id="mDexLink">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            Open on DEXScreener
+          </a>
+          <button class="ext-btn btn-copy" id="mCopyAddrBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            Copy Contract
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Saved Legit Coins Vault Modal Drawer -->
+  <div class="modal-overlay hidden" id="legitModalOverlay">
+    <div class="modal-drawer modal-drawer-wide" id="legitModalDrawer">
+      <div class="modal-header">
+        <div class="modal-token-header">
+          <div class="modal-token-identity">
+            <span class="modal-token-symbol badge-action">LEGIT VAULT</span>
+            <span class="modal-token-name">Persisted Top Performing Tokens</span>
+          </div>
+          <p class="modal-token-addr">Automatically audited and saved in SQLite (SAFE, Score ≥ 80, Liquidity ≥ $50k, 24h Gain ≥ +5%)</p>
+        </div>
+        <button class="modal-close-btn" id="legitCloseBtn" title="Close Vault">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="legit-toolbar">
+          <div class="legit-filters">
+            <select id="legitChainFilter" class="filter-select">
+              <option value="all">All Chains</option>
+              <option value="solana">Solana</option>
+              <option value="base">Base</option>
+              <option value="ethereum">Ethereum</option>
+              <option value="bsc">BNB Chain</option>
+            </select>
+            <select id="legitSortFilter" class="filter-select">
+              <option value="priceChange24h">Sort: Highest 24h Gain</option>
+              <option value="score">Sort: Safety Score</option>
+              <option value="liquidityUsd">Sort: Highest Liquidity</option>
+              <option value="createdAt">Sort: Recently Added</option>
+            </select>
+          </div>
+          <button class="legit-refresh-btn" id="legitRefreshBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Refresh Vault
+          </button>
+        </div>
+
+        <div class="table-responsive" style="margin-top: 1rem;">
+          <table class="gainers-table legit-table">
+            <thead>
+              <tr>
+                <th class="th-token">Token &amp; Chain</th>
+                <th class="th-num">Price USD</th>
+                <th class="th-num">24h Gain</th>
+                <th class="th-num">Liquidity</th>
+                <th class="th-score">Score</th>
+                <th class="th-badge">Badge</th>
+                <th class="th-num">Saved At</th>
+                <th class="th-action">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="legitTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="legitEmptyState" class="empty-state hidden">
+          <div class="empty-icon">🛡️</div>
+          <h3>No legit coins saved yet</h3>
+          <p>As the live stream scans tokens with Score ≥ 80 and Gain ≥ +5%, they will be automatically saved here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="footer-content">
+      <span>DEXScreener Inspector &copy; 2026 &bull; Real-time Token Security Gateway</span>
+      <span class="footer-note">Telemetry via RugCheck &bull; GoPlus Security &bull; DEXScreener API</span>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

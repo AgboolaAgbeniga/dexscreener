@@ -1,0 +1,101 @@
+{
+  "name": "dexscreener-top-gainers-trap-inspector",
+  "version": "1.1.0",
+  "description": "Real-time DEXScreener Top Gainers, Multi-Vector Trap Inspector, and SQLite Legit Token Vault",
+  "entrypoints": {
+    "server": "src/server.js",
+    "client": "public/app.js",
+    "html": "public/index.html",
+    "css": "public/style.css"
+  },
+  "modules": {
+    "config": {
+      "chains": "src/config/chains.js",
+      "thresholds": "src/config/thresholds.js",
+      "legit": "src/config/legit.js"
+    },
+    "services": {
+      "dexscreener": "src/services/dexscreener.js",
+      "security": "src/services/security.js",
+      "inspector": "src/services/inspector.js",
+      "database": "src/services/database.js"
+    },
+    "database": {
+      "schema": "prisma/schema.prisma",
+      "client": "src/utils/prismaClient.js",
+      "sqlite": "dev.db"
+    },
+    "theme": {
+      "cohereTokens": "public/theme/cohere.tokens.css",
+      "cohereDark": "public/theme/cohere.dark.css"
+    },
+    "utils": {
+      "cache": "src/utils/cache.js",
+      "sse": "src/utils/sse.js",
+      "queue": "src/utils/queue.js",
+      "prisma": "src/utils/prismaClient.js"
+    }
+  },
+  "routes": {
+    "GET /api/gainers": "Fetch top gainers for chain, run security inspection, return enriched tokens",
+    "GET /api/scan": "On-demand deep security scan for a single token/pair address",
+    "GET /api/stream": "Server-Sent Events (SSE) live feed of top gainers and risk scores",
+    "GET /api/legit": "Retrieve saved high-performing legitimate tokens from SQLite",
+    "DELETE /api/legit/:identifier": "Delete a saved legit token by ID or pairAddress",
+    "GET /api/health": "Health check, upstream API status, and database diagnostics"
+  },
+  "dataShapes": {
+    "enrichedToken": {
+      "pairAddress": "string",
+      "baseToken": { "address": "string", "name": "string", "symbol": "string" },
+      "quoteToken": { "symbol": "string" },
+      "chainId": "string",
+      "dexId": "string",
+      "priceUsd": "string",
+      "priceChange24h": "number",
+      "volume24h": "number",
+      "liquidityUsd": "number",
+      "fdv": "number",
+      "txns24h": { "buys": "number", "sells": "number" },
+      "security": {
+        "score": "number (0-100)",
+        "badge": "SAFE | CAUTION | TRAP",
+        "flags": "Array<{ rule: string, severity: 'danger'|'warn'|'info', detail: string }>",
+        "scoreBreakdown": {
+          "honeypot": "number",
+          "mintAuthority": "number",
+          "freezeAuthority": "number",
+          "lowLiquidity": "number",
+          "highTax": "number",
+          "holderConcentration": "number"
+        },
+        "details": "object"
+      }
+    },
+    "legitToken": {
+      "id": "string (UUID)",
+      "pairAddress": "string (unique)",
+      "tokenAddress": "string",
+      "chainId": "string",
+      "symbol": "string",
+      "name": "string",
+      "priceUsd": "number?",
+      "priceChange24h": "number",
+      "liquidityUsd": "number",
+      "score": "number",
+      "badge": "SAFE",
+      "createdAt": "DateTime"
+    },
+    "errorEnvelope": {
+      "error": "string",
+      "code": "string",
+      "retryAfter": "number?"
+    }
+  },
+  "tests": {
+    "unit": "src/tests/inspector.test.js",
+    "integration": "src/tests/gainers.integration.test.js",
+    "database": "src/tests/database.test.js",
+    "cache": "src/tests/cache.test.js"
+  }
+}

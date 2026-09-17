@@ -1,0 +1,38 @@
+/**
+ * Cohere Dark Theme Overrides
+ * High-contrast, dark-mode variants for Cohere design tokens.
+ */
+:root {
+  /* Dark Canvas & Surfaces */
+  --cohere-canvas-dark: #07090e;
+  --cohere-surface-dark: #0d111a;
+  --cohere-card-dark: #121824;
+  --cohere-card-hover-dark: #172030;
+  --cohere-soft-stone-dark: #151c2a;
+  --cohere-pale-green-dark: rgba(0, 60, 51, 0.35);
+  --cohere-pale-blue-dark: rgba(24, 99, 220, 0.18);
+  
+  /* Dark Borders & Dividers */
+  --cohere-hairline-dark: #1e293b;
+  --cohere-border-light-dark: #2a374f;
+  --cohere-card-border-dark: #222d42;
+
+  /* Dark Text & Foreground */
+  --cohere-ink-dark: #f8fafc;
+  --cohere-body-muted-dark: #94a3b8;
+  --cohere-muted-dark: #64748b;
+  --cohere-slate-dark: #7888a3;
+
+  /* Active Theme Variables mapped to Dark by default for our Terminal */
+  --theme-bg: var(--cohere-canvas-dark);
+  --theme-surface: var(--cohere-surface-dark);
+  --theme-card: var(--cohere-card-dark);
+  --theme-card-hover: var(--cohere-card-hover-dark);
+  --theme-border: var(--cohere-hairline-dark);
+  --theme-border-highlight: var(--cohere-border-light-dark);
+  --theme-text: var(--cohere-ink-dark);
+  --theme-text-muted: var(--cohere-body-muted-dark);
+  --theme-text-dim: var(--cohere-muted-dark);
+  --theme-action: var(--cohere-action-blue);
+  --theme-coral: var(--cohere-coral);
+}

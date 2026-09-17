@@ -1,0 +1,40 @@
+// Prisma schema for SQLite database
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model LegitToken {
+  id              String   @id @default(uuid())
+  pairAddress     String   @unique
+  tokenAddress    String
+  chainId         String
+  symbol          String
+  name            String
+  priceUsd        Float?
+  priceChange24h  Float
+  liquidityUsd    Float
+  fdv             Float?
+  volume24h       Float?
+  score           Int
+  badge           String   @default("SAFE")
+  honeypot        Boolean  @default(false)
+  mintAuth        Boolean  @default(false)
+  freezeAuth      Boolean  @default(false)
+  buyTax          Float?
+  sellTax         Float?
+  topHolderPct    Float?
+  dexId           String?
+  url             String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([chainId])
+  @@index([score])
+  @@index([priceChange24h])
+  @@index([createdAt])
+}

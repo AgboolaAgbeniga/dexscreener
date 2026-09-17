@@ -1,0 +1,30 @@
+{
+  "name": "dexscreener-top-gainers-trap-inspector",
+  "version": "1.0.0",
+  "description": "Real-time DEXScreener Top Gainers and Security Trap Inspector Dashboard",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "test": "jest --runInBand --forceExit"
+  },
+  "keywords": ["dexscreener", "crypto", "security", "honeypot", "rugpull", "solana", "base", "ethereum", "bsc"],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "express-rate-limit": "^7.5.0",
+    "node-cache": "^5.1.2",
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "prisma": "^5.22.0",
+    "supertest": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

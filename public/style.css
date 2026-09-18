@@ -67,7 +67,7 @@ body {
   filter: blur(140px);
   pointer-events: none;
   z-index: 0;
-  opacity: 0.35;
+  opacity: 0.15;
 }
 
 .orb-purple {
@@ -727,12 +727,129 @@ body {
   color: var(--accent-cyan);
 }
 
+/* Token Inception & Launch Badge */
+.token-launch-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 3px;
+  flex-wrap: wrap;
+}
+
+.token-age-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.token-surge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+}
+
+.token-surge-pill.mega-surge {
+  color: #34d399;
+  background: rgba(16, 185, 129, 0.1);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+/* Volume Turnover & Wash-Trading Flag */
+.turnover-pill {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  padding: 0.1rem 0.35rem;
+  border-radius: 4px;
+  margin-top: 3px;
+  text-align: right;
+  font-weight: 500;
+}
+
+.turnover-pill.normal {
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.turnover-pill.wash-risk {
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  font-weight: 700;
+  animation: pulseWash 2s infinite ease-in-out;
+}
+
+@keyframes pulseWash {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Zero-Sell Honeypot Alert */
+.zero-sell-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.18);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 3px;
+}
+
 /* Numeric Data Styles */
+.mono-val, .th-num, .gain-pill, .score-num, .metric-value, .pressure-meta {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
 .mono-val {
   font-family: var(--font-mono);
   font-weight: 600;
   text-align: right;
   display: block;
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Price Tick Flash Micro-Animations */
+@keyframes flashGreen {
+  0% { background-color: rgba(16, 185, 129, 0.28); color: #34d399; }
+  100% { background-color: transparent; }
+}
+
+@keyframes flashRed {
+  0% { background-color: rgba(239, 68, 68, 0.28); color: #f87171; }
+  100% { background-color: transparent; }
+}
+
+.price-flash-up {
+  animation: flashGreen 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-radius: 4px;
+}
+
+.price-flash-down {
+  animation: flashRed 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  border-radius: 4px;
 }
 
 .gain-pill {
@@ -757,6 +874,62 @@ body {
   color: var(--status-caution);
   font-size: 0.7rem;
   display: block;
+}
+
+/* Buy / Sell Volume Pressure Bar */
+.pressure-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 125px;
+  cursor: default;
+}
+
+.pressure-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: var(--font-mono);
+  line-height: 1;
+}
+
+.pressure-buy {
+  color: #10b981;
+  font-weight: 600;
+}
+
+.pressure-ratio {
+  color: var(--text-muted);
+  font-size: 0.68rem;
+  font-weight: 500;
+}
+
+.pressure-sell {
+  color: #f87171;
+  font-weight: 600;
+}
+
+.pressure-bar {
+  display: flex;
+  height: 5px;
+  width: 100%;
+  border-radius: 9999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.3);
+}
+
+.pressure-fill-buy {
+  background: #10b981;
+  height: 100%;
+  transition: width 0.4s ease;
+}
+
+.pressure-fill-sell {
+  background: #ef4444;
+  height: 100%;
+  transition: width 0.4s ease;
 }
 
 /* Score Bar Gauge */
@@ -792,38 +965,68 @@ body {
 .score-caution { color: var(--status-caution); background: var(--status-caution); }
 .score-trap { color: var(--status-trap); background: var(--status-trap); }
 
-/* Badges */
+/* Badges with Cohere Micro-Dots */
 .badge-pill {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0.3rem 0.8rem;
+  gap: 0.38rem;
+  padding: 0.28rem 0.7rem;
   border-radius: var(--radius-pill);
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
 }
 
 .badge-safe {
   background: var(--status-safe-bg);
   color: var(--status-safe);
   border: 1px solid rgba(16, 185, 129, 0.3);
-  box-shadow: 0 0 10px rgba(16, 185, 129, 0.2);
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.15);
+}
+
+.badge-safe .badge-dot {
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+  animation: pulseDot 2s infinite ease-in-out;
 }
 
 .badge-caution {
   background: var(--status-caution-bg);
   color: var(--status-caution);
   border: 1px solid rgba(245, 158, 11, 0.3);
-  box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.15);
+}
+
+.badge-caution .badge-dot {
+  background: #f59e0b;
+  box-shadow: 0 0 6px #f59e0b;
 }
 
 .badge-trap {
   background: var(--status-trap-bg);
   color: var(--status-trap);
   border: 1px solid rgba(239, 68, 68, 0.3);
-  box-shadow: 0 0 10px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 0 10px rgba(239, 68, 68, 0.15);
+}
+
+.badge-trap .badge-dot {
+  background: #ef4444;
+  box-shadow: 0 0 6px #ef4444;
+}
+
+@keyframes pulseDot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(0.85); }
 }
 
 /* Action Button */
@@ -1197,6 +1400,62 @@ body {
   padding: 0.6rem 0.8rem;
   border-top: 1px solid var(--border-subtle);
   font-family: var(--font-mono);
+}
+
+/* Trader's 1-Click Due Diligence Cross-Check Dock */
+.cross-check-dock {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.dock-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border-radius: var(--radius-sm);
+  background: rgba(14, 20, 34, 0.85);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-main);
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: var(--transition);
+}
+
+.dock-btn:hover {
+  background: rgba(26, 36, 60, 0.9);
+  border-color: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.dock-btn.btn-rugcheck:hover {
+  border-color: #ec4899;
+  color: #f472b6;
+}
+
+.dock-btn.btn-honeypot:hover {
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+
+.dock-btn.btn-bubble:hover {
+  border-color: #a855f7;
+  color: #c084fc;
+}
+
+.dock-btn.btn-explorer:hover {
+  border-color: #06b6d4;
+  color: #38bdf8;
+}
+
+.dock-icon {
+  font-size: 1rem;
+  line-height: 1;
 }
 
 .modal-footer-actions {

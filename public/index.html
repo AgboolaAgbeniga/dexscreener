@@ -303,6 +303,18 @@
             <span class="mstat-label">Txn Buys/Sells</span>
             <span class="mstat-val" id="mTxns">0 / 0</span>
           </div>
+          <div class="mstat-item">
+            <span class="mstat-label">Launched</span>
+            <span class="mstat-val" id="mLaunchedAt">--</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">Surge From Launch</span>
+            <span class="mstat-val text-action" id="mSurgeFromCreation">--</span>
+          </div>
+          <div class="mstat-item">
+            <span class="mstat-label">Turnover (Vol/Liq)</span>
+            <span class="mstat-val" id="mTurnover">--</span>
+          </div>
         </div>
 
         <!-- Trap Detection Checklist -->
@@ -333,6 +345,15 @@
               <!-- Dynamically populated -->
             </tbody>
           </table>
+        </div>
+
+        <!-- Trader's 1-Click Due Diligence Cross-Check Dock -->
+        <div class="modal-section-title" style="margin-top: 1.5rem;">
+          <span>Trader's Due Diligence Dock</span>
+          <span class="section-subtitle">Cross-verify on independent scanners &amp; explorers</span>
+        </div>
+        <div class="cross-check-dock" id="mCrossCheckDock">
+          <!-- Dynamically populated links (RugCheck, Honeypot.is, Bubblemaps, Explorer) -->
         </div>
 
         <!-- External Links & Actions -->

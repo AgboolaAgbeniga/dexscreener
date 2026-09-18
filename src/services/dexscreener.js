@@ -191,6 +191,65 @@ class DexscreenerService {
     const priceChange24 = typeof p.priceChange?.h24 === 'number'
       ? p.priceChange.h24
       : (typeof p.priceChange?.h1 === 'number' ? p.priceChange.h1 : 0);
+    const volume24h = Math.round(p.volume?.h24 || 0);
+    const liquidityUsd = Math.round(p.liquidity?.usd || 0);
+    const fdv = Math.round(p.fdv || 0);
+
+    // 1. Launch Inception Telemetry
+    const createdAt = typeof p.pairCreatedAt === 'number' ? p.pairCreatedAt : null;
+    const now = Date.now();
+    let ageMinutes = null;
+    let ageFormatted = null;
+
+    if (createdAt) {
+      const diffMs = Math.max(0, now - createdAt);
+      ageMinutes = Math.round(diffMs / 60000);
+      const hours = diffMs / 3600000;
+      const days = diffMs / 86400000;
+
+      if (ageMinutes < 60) {
+        ageFormatted = `${ageMinutes}m ago`;
+      } else if (hours < 24) {
+        ageFormatted = `${hours.toFixed(1)}h ago`;
+      } else if (days < 30) {
+        ageFormatted = `${Math.round(days)}d ago`;
+      } else {
+        const months = Math.round(days / 30);
+        ageFormatted = `${months}mo ago`;
+      }
+    }
+
+    // Estimated Price Surge Since Inception
+    const dexId = (p.dexId || '').toLowerCase();
+    let estGainFromCreation = null;
+    let estMultiplier = null;
+
+    if (dexId === 'pumpfun' || dexId === 'pumpswap' || dexId === 'moonshot') {
+      // Pump launchpad bonding curve baseline starts at ~$5,000 USD FDV
+      const initialFdv = 5000;
+      if (fdv > initialFdv) {
+        estGainFromCreation = Math.round(((fdv - initialFdv) / initialFdv) * 100);
+        estMultiplier = (fdv / initialFdv).toFixed(1) + 'x';
+      } else {
+        estGainFromCreation = Number(priceChange24.toFixed(0));
+        estMultiplier = (1 + Math.max(0, priceChange24) / 100).toFixed(1) + 'x';
+      }
+    } else if (ageMinutes !== null && ageMinutes <= 1440) {
+      // For pairs launched within last 24h, 24h change represents inception trajectory
+      estGainFromCreation = Number(priceChange24.toFixed(0));
+      estMultiplier = (1 + Math.max(0, priceChange24) / 100).toFixed(1) + 'x';
+    } else if (priceChange24 > 0) {
+      estGainFromCreation = Number(priceChange24.toFixed(0));
+      estMultiplier = (1 + priceChange24 / 100).toFixed(1) + 'x';
+    }
+
+    // 2. Volume Turnover Ratio & Wash-Trading Detector
+    // Trader rule of thumb: Organic is 0.5x-5x turnover. >10x is common wash trading.
+    const turnoverRatio = liquidityUsd > 0 ? Number((volume24h / liquidityUsd).toFixed(1)) : 0;
+    const isWashRisk = turnoverRatio >= 10.0 && volume24h >= 25000;
+
+    // 3. Zero-Sell Honeypot Heuristic
+    const isZeroSellTrap = buys24 >= 20 && sells24 === 0;
 
     return {
       pairAddress: p.pairAddress,
@@ -210,13 +269,27 @@ class DexscreenerService {
       priceChange24h: Number(priceChange24.toFixed(2)),
       priceChange1h: Number((p.priceChange?.h1 || 0).toFixed(2)),
       priceChange5m: Number((p.priceChange?.m5 || 0).toFixed(2)),
-      volume24h: Math.round(p.volume?.h24 || 0),
-      liquidityUsd: Math.round(p.liquidity?.usd || 0),
-      fdv: Math.round(p.fdv || 0),
+      volume24h,
+      liquidityUsd,
+      fdv,
       txns24h: {
         buys: buys24,
         sells: sells24,
         total: buys24 + sells24
+      },
+      launch: {
+        pairCreatedAt: createdAt,
+        ageFormatted,
+        ageMinutes,
+        estGainFromCreation,
+        estMultiplier
+      },
+      turnover: {
+        ratio: turnoverRatio,
+        isWashRisk
+      },
+      heuristics: {
+        isZeroSellTrap
       }
     };
   }

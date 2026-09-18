@@ -23,13 +23,15 @@ class InspectorService {
       transactionDynamics: 0
     };
 
-    // 1. Honeypot check
-    if (securityReport.isHoneypot) {
+    // 1. Honeypot check (Scanner + On-chain Transaction Heuristic)
+    if (securityReport.isHoneypot || pair?.heuristics?.isZeroSellTrap) {
       breakdown.honeypot = weights.honeypot;
       flags.push({
-        rule: 'HONEYPOT_DETECTED',
+        rule: pair?.heuristics?.isZeroSellTrap ? 'ZERO_SELLS_HONEYPOT' : 'HONEYPOT_DETECTED',
         severity: 'danger',
-        detail: 'Contract fails sell simulations or restricts sales completely.'
+        detail: pair?.heuristics?.isZeroSellTrap
+          ? `Token has ${pair.txns24h?.buys || 0} buys and ZERO sells over 24h. Classic honeypot or transfer-restriction trap.`
+          : 'Contract fails sell simulations or restricts sales completely.'
       });
     }
 
@@ -115,6 +117,15 @@ class InspectorService {
         rule: 'HEAVY_SELL_PRESSURE',
         severity: 'warn',
         detail: `Sell volume ratio is ${(sells / buys).toFixed(1)}x buy volume. Active dump detected.`
+      });
+    }
+
+    // 8. Wash-Trading & Turnover Check (Trader Rule: >10x Vol/Liq)
+    if (pair?.turnover?.isWashRisk) {
+      flags.push({
+        rule: 'WASH_TRADING_SUSPECT',
+        severity: 'warn',
+        detail: `Abnormal turnover of ${pair.turnover.ratio}x 24h volume to liquidity (organic benchmark is 0.5x-5x). High probability of wash-trading.`
       });
     }
 

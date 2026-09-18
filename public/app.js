@@ -18,7 +18,10 @@ const state = {
   legitTokens: [],
   legitChain: 'all',
   legitSort: 'priceChange24h',
-  legitCount: 0
+  legitCount: 0,
+
+  // Real-time price tracking cache
+  priceCache: new Map()
 };
 
 // DOM Elements
@@ -65,8 +68,12 @@ const elements = {
   mFdv: document.getElementById('mFdv'),
   mVolume: document.getElementById('mVolume'),
   mTxns: document.getElementById('mTxns'),
+  mLaunchedAt: document.getElementById('mLaunchedAt'),
+  mSurgeFromCreation: document.getElementById('mSurgeFromCreation'),
+  mTurnover: document.getElementById('mTurnover'),
   mChecklistContainer: document.getElementById('mChecklistContainer'),
   mBreakdownTableBody: document.getElementById('mBreakdownTableBody'),
+  mCrossCheckDock: document.getElementById('mCrossCheckDock'),
   mDexLink: document.getElementById('mDexLink'),
   mCopyAddrBtn: document.getElementById('mCopyAddrBtn'),
 
@@ -276,11 +283,71 @@ function createTableRow(token) {
   const gainClass = gain >= 0 ? 'gain-pill' : 'gain-pill negative';
   const gainSign = gain >= 0 ? '+' : '';
 
+  // Real-time price change detection for tick flash
+  const addr = token.baseToken?.address || token.pairAddress || '';
+  const currentPrice = parseFloat(token.priceUsd) || 0;
+  let flashClass = '';
+  if (addr && state.priceCache.has(addr)) {
+    const prev = state.priceCache.get(addr);
+    if (currentPrice > prev) {
+      flashClass = 'price-flash-up';
+    } else if (currentPrice < prev) {
+      flashClass = 'price-flash-down';
+    }
+  }
+  if (addr && currentPrice > 0) {
+    state.priceCache.set(addr, currentPrice);
+  }
+
+  // Volume Pressure Bar calculations
   const buys = token.txns24h?.buys || 0;
   const sells = token.txns24h?.sells || 0;
+  const totalTxns = buys + sells;
+  const buyPct = totalTxns > 0 ? Math.round((buys / totalTxns) * 100) : 50;
+  const sellPct = totalTxns > 0 ? (100 - buyPct) : 50;
+
   const liqWarning = (token.liquidityUsd < 50000) ? `<span class="liq-warn">&lt;$50k floor</span>` : '';
 
   const shortAddr = formatAddress(token.baseToken?.address || token.pairAddress);
+
+  // Inception & Launch telemetry
+  const ageFormatted = token.launch?.ageFormatted;
+  const estMultiplier = token.launch?.estMultiplier;
+  const estGain = token.launch?.estGainFromCreation;
+  const isMegaSurge = (parseFloat(estMultiplier) || 0) >= 10;
+
+  const launchMarkup = (ageFormatted || estMultiplier) ? `
+    <div class="token-launch-row">
+      ${ageFormatted ? `
+        <span class="token-age-badge" title="Pair created on DEX: ${ageFormatted}">
+          <svg viewBox="0 0 24 24" width="9" height="9" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+          ${ageFormatted}
+        </span>
+      ` : ''}
+      ${estMultiplier ? `
+        <span class="token-surge-pill ${isMegaSurge ? 'mega-surge' : ''}" title="Estimated surge from inception: +${estGain ? estGain.toLocaleString() : 0}% (${estMultiplier})">
+          ⚡ ${estMultiplier} from launch
+        </span>
+      ` : ''}
+    </div>
+  ` : '';
+
+  // Turnover ratio & wash trading detector
+  const turnoverRatio = token.turnover?.ratio || 0;
+  const isWash = token.turnover?.isWashRisk;
+  const turnoverMarkup = turnoverRatio > 0 ? `
+    <span class="turnover-pill ${isWash ? 'wash-risk' : 'normal'}" title="${isWash ? 'WARNING: 24h Volume is ' + turnoverRatio + 'x liquidity! High likelihood of coordinated wash-trading.' : 'Turnover: 24h Volume / Liquidity'}">
+      ${isWash ? `⚠️ ${turnoverRatio}x Wash Risk` : `${turnoverRatio}x vol/liq`}
+    </span>
+  ` : '';
+
+  // Zero-sell honeypot heuristic alert
+  const isZeroSell = token.heuristics?.isZeroSellTrap;
+  const zeroSellMarkup = isZeroSell ? `
+    <span class="zero-sell-alert" title="EXTREME RISK: Zero sells recorded despite ${buys} buys. Classic honeypot signature!">
+      🚨 0 Sells Trap
+    </span>
+  ` : '';
 
   return `
     <tr data-token-addr="${escapeHtml(token.baseToken?.address || '')}">
@@ -301,24 +368,37 @@ function createTableRow(token) {
                 </svg>
               </button>
             </div>
+            ${launchMarkup}
           </div>
         </div>
       </td>
       <td class="th-num">
-        <span class="mono-val">$${token.priceUsd}</span>
+        <span class="mono-val ${flashClass}">$${token.priceUsd}</span>
       </td>
       <td class="th-num">
         <span class="${gainClass}">${gainSign}${gain.toFixed(2)}%</span>
       </td>
       <td class="th-num">
         <span class="mono-val">$${formatCompact(token.volume24h)}</span>
+        ${turnoverMarkup}
       </td>
       <td class="th-num">
         <span class="mono-val">$${formatCompact(token.liquidityUsd)}</span>
         ${liqWarning}
       </td>
       <td class="th-num">
-        <span class="mono-val">${formatCompact(buys)} / ${formatCompact(sells)}</span>
+        <div class="pressure-wrap" title="24h Txns: ${buys.toLocaleString()} Buys (${buyPct}%) / ${sells.toLocaleString()} Sells (${sellPct}%)">
+          <div class="pressure-meta">
+            <span class="pressure-buy">${formatCompact(buys)}</span>
+            <span class="pressure-ratio">${buyPct}% B</span>
+            <span class="pressure-sell">${formatCompact(sells)}</span>
+          </div>
+          <div class="pressure-bar">
+            <div class="pressure-fill-buy" style="width: ${buyPct}%"></div>
+            <div class="pressure-fill-sell" style="width: ${sellPct}%"></div>
+          </div>
+        </div>
+        ${zeroSellMarkup}
       </td>
       <td class="th-score">
         <div class="score-cell-wrap">
@@ -329,7 +409,10 @@ function createTableRow(token) {
         </div>
       </td>
       <td class="th-badge">
-        <span class="badge-pill ${badgeClass}">${badge}</span>
+        <span class="badge-pill ${badgeClass}">
+          <span class="badge-dot"></span>
+          <span>${badge}</span>
+        </span>
       </td>
       <td class="th-action">
         <button class="btn-inspect" data-inspect-addr="${escapeHtml(token.baseToken?.address || '')}">
@@ -380,6 +463,7 @@ function setupEventListeners() {
 
     state.chain = selectedChain;
     state.tokens = [];
+    state.priceCache.clear();
     renderSkeletons(6);
     connectSSE(state.chain);
   });
@@ -402,6 +486,7 @@ function setupEventListeners() {
 
   // Manual Refresh
   elements.manualRefreshBtn.addEventListener('click', () => {
+    state.priceCache.clear();
     renderSkeletons(4);
     connectSSE(state.chain);
   });
@@ -563,6 +648,77 @@ function openInspectModal(token) {
   elements.mFdv.textContent = `$${formatNumber(token.fdv)}`;
   elements.mVolume.textContent = `$${formatNumber(token.volume24h)}`;
   elements.mTxns.textContent = `${formatNumber(token.txns24h?.buys || 0)} / ${formatNumber(token.txns24h?.sells || 0)}`;
+
+  // Launch and Turnover telemetry
+  if (elements.mLaunchedAt) {
+    elements.mLaunchedAt.textContent = token.launch?.ageFormatted ? token.launch.ageFormatted : 'Seasoned';
+  }
+  if (elements.mSurgeFromCreation) {
+    elements.mSurgeFromCreation.textContent = token.launch?.estMultiplier 
+      ? `⚡ ${token.launch.estMultiplier} (+${(token.launch.estGainFromCreation || 0).toLocaleString()}%)`
+      : 'N/A';
+  }
+  if (elements.mTurnover) {
+    const tRatio = token.turnover?.ratio || 0;
+    const isWash = token.turnover?.isWashRisk;
+    elements.mTurnover.textContent = tRatio > 0 
+      ? `${tRatio}x ${isWash ? '⚠️ (WASH RISK)' : '(Organic)'}`
+      : '--';
+    elements.mTurnover.className = isWash ? 'mstat-val text-red' : 'mstat-val';
+  }
+
+  // Populate Trader's Due Diligence Cross-Check Dock
+  if (elements.mCrossCheckDock) {
+    const chain = (token.chainId || state.chain).toLowerCase();
+    const mintAddr = token.baseToken?.address || token.pairAddress;
+    let dockHtml = '';
+
+    if (chain === 'solana') {
+      dockHtml = `
+        <a href="https://rugcheck.xyz/tokens/${mintAddr}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-rugcheck" title="Inspect Mint/Freeze Authorities & LP Lock on RugCheck">
+          <span class="dock-icon">🛡️</span>
+          <span>RugCheck Report</span>
+        </a>
+        <a href="https://bubblemaps.io/solana/token/${mintAddr}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-bubble" title="Inspect Insider Wallet Clusters on Bubblemaps">
+          <span class="dock-icon">🫧</span>
+          <span>Bubblemaps Cluster</span>
+        </a>
+        <a href="https://solscan.io/token/${mintAddr}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-explorer" title="View On-chain Token Contract & Holders on Solscan">
+          <span class="dock-icon">🔎</span>
+          <span>Solscan Explorer</span>
+        </a>
+        <a href="${token.url || `https://dexscreener.com/solana/${token.pairAddress}`}" target="_blank" rel="noopener noreferrer" class="dock-btn" title="View Live Chart on DEXScreener">
+          <span class="dock-icon">📈</span>
+          <span>Live Chart</span>
+        </a>
+      `;
+    } else {
+      const explorerUrl = chain === 'base' ? `https://basescan.org/token/${mintAddr}` :
+                         (chain === 'bsc' ? `https://bscscan.com/token/${mintAddr}` : `https://etherscan.io/token/${mintAddr}`);
+      const explorerName = chain === 'base' ? 'Basescan' : (chain === 'bsc' ? 'BscScan' : 'Etherscan');
+      const chainId = chain === 'base' ? '8453' : (chain === 'bsc' ? '56' : '1');
+
+      dockHtml = `
+        <a href="https://honeypot.is/?address=${mintAddr}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-honeypot" title="Simulate Buy & Sell execution on Honeypot.is">
+          <span class="dock-icon">🍯</span>
+          <span>Honeypot.is Test</span>
+        </a>
+        <a href="https://gopluslabs.io/token-security/${chainId}/${mintAddr}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-rugcheck" title="Full Contract Permission Audit on GoPlus">
+          <span class="dock-icon">🛡️</span>
+          <span>GoPlus Audit</span>
+        </a>
+        <a href="https://bubblemaps.io/eth/token/${mintAddr}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-bubble" title="Inspect Insider Clustering on Bubblemaps">
+          <span class="dock-icon">🫧</span>
+          <span>Bubblemaps Cluster</span>
+        </a>
+        <a href="${explorerUrl}" target="_blank" rel="noopener noreferrer" class="dock-btn btn-explorer" title="Inspect On-chain Contract & Top Holders">
+          <span class="dock-icon">🔎</span>
+          <span>${explorerName}</span>
+        </a>
+      `;
+    }
+    elements.mCrossCheckDock.innerHTML = dockHtml;
+  }
 
   // Checklist Items
   elements.mChecklistContainer.innerHTML = buildChecklistCards(token, secDetails, sec);

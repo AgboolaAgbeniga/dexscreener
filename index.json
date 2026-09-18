@@ -56,7 +56,20 @@
       "volume24h": "number",
       "liquidityUsd": "number",
       "fdv": "number",
-      "txns24h": { "buys": "number", "sells": "number" },
+      "launch": {
+        "pairCreatedAt": "number?",
+        "ageFormatted": "string?",
+        "ageMinutes": "number?",
+        "estGainFromCreation": "number?",
+        "estMultiplier": "string?"
+      },
+      "turnover": {
+        "ratio": "number",
+        "isWashRisk": "boolean"
+      },
+      "heuristics": {
+        "isZeroSellTrap": "boolean"
+      },
       "security": {
         "score": "number (0-100)",
         "badge": "SAFE | CAUTION | TRAP",

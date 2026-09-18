@@ -158,10 +158,144 @@ async function clearLegitTokens() {
   }
 }
 
+/**
+ * Tracked Tokens (Projection Watch Lab)
+ */
+async function addTrackedToken(tokenData, analysisResult = {}) {
+  try {
+    const entryPrice = parseFloat(tokenData.priceUsd) || 0;
+    const deRiskTarget = Number((entryPrice * 2).toFixed(6));
+    const invalidationStop = Number((entryPrice * 0.85).toFixed(6));
+
+    const data = {
+      pairAddress: tokenData.pairAddress,
+      tokenAddress: tokenData.baseToken?.address || tokenData.tokenAddress || tokenData.pairAddress,
+      chainId: (tokenData.chainId || 'solana').toLowerCase(),
+      symbol: tokenData.baseToken?.symbol || tokenData.symbol || 'UNKNOWN',
+      name: tokenData.baseToken?.name || tokenData.name || 'Unknown Token',
+      entryPriceUsd: entryPrice,
+      currentPriceUsd: entryPrice,
+      entryLiquidityUsd: parseFloat(tokenData.liquidityUsd) || null,
+      entryFdv: parseFloat(tokenData.fdv) || null,
+      legitimacyScore: parseInt(analysisResult.scores?.legitimacy || analysisResult.dimensions?.legitimacy?.score || analysisResult.legitimacyScore, 10) || 50,
+      momentumScore: parseInt(analysisResult.scores?.momentum || analysisResult.dimensions?.momentum?.score || analysisResult.momentumScore, 10) || 50,
+      exitabilityScore: parseInt(analysisResult.scores?.exitability || analysisResult.dimensions?.exitability?.score || analysisResult.exitabilityScore, 10) || 50,
+      overallGrade: analysisResult.overallGrade || analysisResult.grade || 'B',
+      projectedVerdict: analysisResult.projectedVerdict || 'BULLISH_RUNNER',
+      deRiskPriceTarget: deRiskTarget,
+      invalidationStopPrice: invalidationStop,
+      pnlPercent: 0.0,
+      outcomeStatus: 'TRACKING',
+      dexId: tokenData.dexId || null,
+      url: tokenData.url || null,
+      notes: analysisResult.notes || null
+    };
+
+    const record = await prisma.trackedToken.upsert({
+      where: { pairAddress: tokenData.pairAddress },
+      update: {
+        currentPriceUsd: entryPrice,
+        legitimacyScore: data.legitimacyScore,
+        momentumScore: data.momentumScore,
+        exitabilityScore: data.exitabilityScore,
+        overallGrade: data.overallGrade,
+        projectedVerdict: data.projectedVerdict
+      },
+      create: data
+    });
+
+    return record;
+  } catch (err) {
+    console.error(`[Database Service] Failed to add tracked token:`, err.message);
+    throw err;
+  }
+}
+
+async function getTrackedTokens(options = {}) {
+  const { chainId, status, sortBy = 'createdAt', sortOrder = 'desc' } = options;
+  const where = {};
+  if (chainId && chainId !== 'all') where.chainId = chainId.toLowerCase();
+  if (status && status !== 'all') where.outcomeStatus = status.toUpperCase();
+
+  const validSort = ['createdAt', 'pnlPercent', 'entryPriceUsd', 'currentPriceUsd'];
+  const sortField = validSort.includes(sortBy) ? sortBy : 'createdAt';
+  const orderDir = sortOrder.toLowerCase() === 'asc' ? 'asc' : 'desc';
+
+  const tokens = await prisma.trackedToken.findMany({
+    where,
+    orderBy: { [sortField]: orderDir }
+  });
+
+  const total = tokens.length;
+  const passedCount = tokens.filter((t) => t.outcomeStatus === 'HIT_2X_DERISK' || t.pnlPercent >= 50).length;
+  const winRate = total > 0 ? Math.round((passedCount / total) * 100) : 0;
+  const avgPnl = total > 0 ? Number((tokens.reduce((sum, t) => sum + (t.pnlPercent || 0), 0) / total).toFixed(1)) : 0;
+
+  return {
+    tokens,
+    stats: {
+      total,
+      passedCount,
+      winRate,
+      avgPnl
+    }
+  };
+}
+
+async function removeTrackedToken(identifier) {
+  try {
+    return await prisma.trackedToken.deleteMany({
+      where: {
+        OR: [
+          { id: identifier },
+          { pairAddress: identifier }
+        ]
+      }
+    });
+  } catch (err) {
+    console.error(`[Database Service] Failed to delete tracked token:`, err.message);
+    return null;
+  }
+}
+
+async function updateTrackedPrice(pairAddress, livePriceUsd) {
+  try {
+    const existing = await prisma.trackedToken.findUnique({ where: { pairAddress } });
+    if (!existing) return null;
+
+    const currentPrice = parseFloat(livePriceUsd);
+    if (!currentPrice || currentPrice <= 0) return null;
+
+    const pnl = Number((((currentPrice - existing.entryPriceUsd) / existing.entryPriceUsd) * 100).toFixed(2));
+    let outcome = existing.outcomeStatus;
+
+    if (currentPrice >= existing.deRiskPriceTarget) {
+      outcome = 'HIT_2X_DERISK';
+    } else if (currentPrice <= existing.invalidationStopPrice) {
+      outcome = 'STOPPED_OUT';
+    }
+
+    return await prisma.trackedToken.update({
+      where: { pairAddress },
+      data: {
+        currentPriceUsd: currentPrice,
+        pnlPercent: pnl,
+        outcomeStatus: outcome
+      }
+    });
+  } catch (err) {
+    return null;
+  }
+}
+
 module.exports = {
   isLegitCandidate,
   saveLegitToken,
   getLegitTokens,
   deleteLegitToken,
-  clearLegitTokens
+  clearLegitTokens,
+  addTrackedToken,
+  getTrackedTokens,
+  removeTrackedToken,
+  updateTrackedPrice
 };

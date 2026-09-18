@@ -43,6 +43,15 @@
         <span>Legit Vault</span>
         <span class="legit-counter-badge" id="navLegitBadge">0</span>
       </button>
+      <button class="nav-btn-watch" id="openWatchLabBtn" title="Open 24h Projection Watchlist Lab">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="10"></circle>
+          <circle cx="12" cy="12" r="6"></circle>
+          <circle cx="12" cy="12" r="2"></circle>
+        </svg>
+        <span>Projection Lab</span>
+        <span class="watch-counter-badge" id="navWatchBadge">0</span>
+      </button>
       <button class="refresh-btn" id="manualRefreshBtn" title="Force Refresh">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5">
           <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67" stroke-linecap="round" stroke-linejoin="round"/>
@@ -366,6 +375,12 @@
             </svg>
             Open on DEXScreener
           </a>
+          <button class="ext-btn btn-analyze" id="mAnalyzeGrowthBtn" title="Run 3D Momentum, Legitimacy, and Exitability Analysis">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg>
+            <span>Analyze 24h Growth</span>
+          </button>
           <button class="ext-btn btn-copy" id="mCopyAddrBtn">
             <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -441,6 +456,228 @@
           <div class="empty-icon">🛡️</div>
           <h3>No legit coins saved yet</h3>
           <p>As the live stream scans tokens with Score ≥ 80 and Gain ≥ +5%, they will be automatically saved here.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3D Growth & Momentum Analysis Modal Drawer -->
+  <div class="modal-overlay hidden" id="analysisModalOverlay">
+    <div class="modal-drawer" id="analysisModalDrawer">
+      <div class="modal-header">
+        <div class="modal-token-header">
+          <div class="modal-token-identity">
+            <span class="modal-token-symbol" id="anaTokenSymbol">TOKEN</span>
+            <span class="modal-token-name" id="anaTokenName">Token Name</span>
+            <span class="modal-chain-badge" id="anaChainBadge">SOLANA</span>
+          </div>
+          <p class="modal-token-addr" id="anaTokenAddress">Address</p>
+        </div>
+        <button class="modal-close-btn" id="anaCloseBtn" title="Close Analysis">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Setup Grade & Verdict Banner -->
+        <div class="analysis-grade-banner" id="anaGradeBanner">
+          <div class="grade-badge" id="anaGradeBadge">A+</div>
+          <div class="grade-info">
+            <h3 class="grade-headline" id="anaVerdictHeadline">High-Probability Momentum Setup</h3>
+            <p class="grade-summary" id="anaVerdictSummary">Clean contract, strong buyer orderflow absorption, healthy turnover, and deep exit liquidity.</p>
+          </div>
+        </div>
+
+        <!-- 3-Pillar Score Cards Grid -->
+        <div class="tri-score-grid">
+          <div class="tri-card">
+            <div class="tri-card-header">
+              <span class="tri-icon">🛡️</span>
+              <span class="tri-title">Legitimacy</span>
+            </div>
+            <div class="tri-score-val" id="anaLegScore">--</div>
+            <div class="tri-desc">Contract &amp; Owner Safety</div>
+          </div>
+          <div class="tri-card">
+            <div class="tri-card-header">
+              <span class="tri-icon">🚀</span>
+              <span class="tri-title">Momentum</span>
+            </div>
+            <div class="tri-score-val text-green" id="anaMomScore">--</div>
+            <div class="tri-desc">Orderflow &amp; Sweet Spot Age</div>
+          </div>
+          <div class="tri-card">
+            <div class="tri-card-header">
+              <span class="tri-icon">🚪</span>
+              <span class="tri-title">Exitability</span>
+            </div>
+            <div class="tri-score-val text-action" id="anaExitScore">--</div>
+            <div class="tri-desc">Pool Depth &amp; Sell Route</div>
+          </div>
+        </div>
+
+        <!-- Mechanical Trade Execution Plan -->
+        <div class="modal-section-title" style="margin-top: 1.5rem;">
+          <span>Mechanical Trade Execution Plan</span>
+          <span class="section-subtitle">Disciplined profit-taking &amp; risk invalidation rules</span>
+        </div>
+
+        <div class="execution-plan-box">
+          <div class="plan-metric-row">
+            <div class="plan-metric">
+              <span class="plan-label">Entry Price</span>
+              <span class="plan-val mono-val" id="anaPlanEntry">$0.00</span>
+            </div>
+            <div class="plan-metric">
+              <span class="plan-label">2x De-Risk Target (+100%)</span>
+              <span class="plan-val mono-val text-green" id="anaPlan2x">$0.00</span>
+            </div>
+            <div class="plan-metric">
+              <span class="plan-label">Invalidation Stop (-15%)</span>
+              <span class="plan-val mono-val text-red" id="anaPlanStop">$0.00</span>
+            </div>
+          </div>
+          <div class="plan-rules-list">
+            <div class="plan-rule-item">
+              <span class="rule-bullet">🎯</span>
+              <span><strong>The 2x De-Risk Rule:</strong> Sell 50% at 2x target to extract 100% of original capital. The rest rides for free.</span>
+            </div>
+            <div class="plan-rule-item">
+              <span class="rule-bullet">⏱️</span>
+              <span><strong>The 45-Minute Time Stop:</strong> If price chops sideways with fading volume for 45 minutes, exit immediately.</span>
+            </div>
+            <div class="plan-rule-item">
+              <span class="rule-bullet">🛑</span>
+              <span><strong>Hard Cut:</strong> If price breaches -15% support, cut with zero hesitation. Never marry a micro-cap coin.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 3-Pillar Checklist Breakdown -->
+        <div class="modal-section-title" style="margin-top: 1.5rem;">
+          <span>3-Dimensional Factor Checklist</span>
+          <span class="section-subtitle">Granular breakdown of what passed and failed</span>
+        </div>
+        <div class="pillar-breakdown-container" id="anaPillarBreakdown">
+          <!-- Dynamically populated -->
+        </div>
+
+        <!-- Action Footer -->
+        <div class="modal-footer-actions" style="margin-top: 1.5rem;">
+          <button class="ext-btn btn-track" id="anaTrackBtn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"></path>
+            </svg>
+            <span>Track in Projection Lab</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Projection Watchlist Lab Modal View -->
+  <div class="modal-overlay hidden" id="watchLabModalOverlay">
+    <div class="modal-drawer modal-drawer-wide" id="watchLabModalDrawer">
+      <div class="modal-header">
+        <div class="modal-token-header">
+          <div class="modal-token-identity">
+            <span class="modal-token-symbol badge-action">PROJECTION LAB</span>
+            <span class="modal-token-name">24h Setup Validation &amp; Live PnL Tracker</span>
+          </div>
+          <p class="modal-token-addr">Test 24h momentum projections, track real-time PnL from entry, and validate whether setups hit the 2x de-risk target.</p>
+        </div>
+        <button class="modal-close-btn" id="watchLabCloseBtn" title="Close Projection Lab">&times;</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Summary Stats Ribbon -->
+        <div class="metrics-ribbon" style="grid-template-columns: repeat(3, 1fr); margin-bottom: 1.25rem;">
+          <div class="metric-card">
+            <div class="metric-icon-box action-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <circle cx="12" cy="12" r="6"></circle>
+                <circle cx="12" cy="12" r="2"></circle>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <span class="metric-value" id="labTotalTracked">0</span>
+              <span class="metric-title">Active Tracked</span>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon-box green-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <span class="metric-value text-green" id="labWinRate">0%</span>
+              <span class="metric-title">2x Target Win Rate</span>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-icon-box purple-box">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
+                <polyline points="17 6 23 6 23 12"></polyline>
+              </svg>
+            </div>
+            <div class="metric-data">
+              <span class="metric-value text-purple" id="labAvgPnl">+0.0%</span>
+              <span class="metric-title">Average PnL %</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter Controls -->
+        <div class="legit-toolbar">
+          <div class="legit-filters">
+            <select id="watchChainFilter" class="filter-select">
+              <option value="all">All Chains</option>
+              <option value="solana">Solana</option>
+              <option value="base">Base</option>
+              <option value="ethereum">Ethereum</option>
+              <option value="bsc">BNB Chain</option>
+            </select>
+            <select id="watchStatusFilter" class="filter-select">
+              <option value="all">All Statuses</option>
+              <option value="TRACKING">Active Tracking</option>
+              <option value="HIT_2X_DERISK">Hit 2x Target (Passed)</option>
+              <option value="STOPPED_OUT">Stopped Out (Failed)</option>
+            </select>
+          </div>
+          <button class="legit-refresh-btn" id="watchRefreshBtn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+            </svg>
+            Refresh Lab
+          </button>
+        </div>
+
+        <div class="table-responsive" style="margin-top: 1rem;">
+          <table class="gainers-table legit-table">
+            <thead>
+              <tr>
+                <th class="th-token">Token &amp; Chain</th>
+                <th class="th-num">Entry Price</th>
+                <th class="th-num">Live Price</th>
+                <th class="th-num">Live PnL %</th>
+                <th class="th-score">Grade</th>
+                <th class="th-badge">Milestone Status</th>
+                <th class="th-num">Tracked At</th>
+                <th class="th-action">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="watchLabTableBody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+
+        <div id="watchLabEmptyState" class="empty-state hidden">
+          <div class="empty-icon">🎯</div>
+          <h3>No tokens tracked in Projection Lab yet</h3>
+          <p>Click "Analyze 24h Growth" on any token, then click "+ Track in Projection Lab" to monitor live PnL and test setup accuracy.</p>
         </div>
       </div>
     </div>

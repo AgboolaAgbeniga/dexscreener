@@ -38,3 +38,34 @@ model LegitToken {
   @@index([priceChange24h])
   @@index([createdAt])
 }
+
+model TrackedToken {
+  id                    String   @id @default(uuid())
+  pairAddress           String   @unique
+  tokenAddress          String
+  chainId               String
+  symbol                String
+  name                  String
+  entryPriceUsd         Float
+  currentPriceUsd       Float
+  entryLiquidityUsd     Float?
+  entryFdv              Float?
+  legitimacyScore       Int
+  momentumScore         Int
+  exitabilityScore      Int
+  overallGrade          String   @default("B")
+  projectedVerdict       String   @default("BULLISH_RUNNER")
+  deRiskPriceTarget     Float
+  invalidationStopPrice  Float
+  pnlPercent            Float    @default(0.0)
+  outcomeStatus         String   @default("TRACKING")
+  dexId                 String?
+  url                   String?
+  notes                 String?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  @@index([chainId])
+  @@index([outcomeStatus])
+  @@index([createdAt])
+}

@@ -20,6 +20,14 @@ const state = {
   legitSort: 'priceChange24h',
   legitCount: 0,
 
+  // 3D Analysis & Projection Lab State
+  currentTokenForAnalysis: null,
+  currentAnalysis: null,
+  watchTokens: [],
+  watchChain: 'all',
+  watchStatus: 'all',
+  watchCount: 0,
+
   // Real-time price tracking cache
   priceCache: new Map()
 };
@@ -76,6 +84,7 @@ const elements = {
   mCrossCheckDock: document.getElementById('mCrossCheckDock'),
   mDexLink: document.getElementById('mDexLink'),
   mCopyAddrBtn: document.getElementById('mCopyAddrBtn'),
+  mAnalyzeGrowthBtn: document.getElementById('mAnalyzeGrowthBtn'),
 
   // Legit Vault Elements
   openLegitModalBtn: document.getElementById('openLegitModalBtn'),
@@ -88,7 +97,41 @@ const elements = {
   legitSortFilter: document.getElementById('legitSortFilter'),
   legitRefreshBtn: document.getElementById('legitRefreshBtn'),
   legitTableBody: document.getElementById('legitTableBody'),
-  legitEmptyState: document.getElementById('legitEmptyState')
+  legitEmptyState: document.getElementById('legitEmptyState'),
+
+  // 3D Analysis Modal Elements
+  analysisModalOverlay: document.getElementById('analysisModalOverlay'),
+  anaCloseBtn: document.getElementById('anaCloseBtn'),
+  anaTokenSymbol: document.getElementById('anaTokenSymbol'),
+  anaTokenName: document.getElementById('anaTokenName'),
+  anaChainBadge: document.getElementById('anaChainBadge'),
+  anaTokenAddress: document.getElementById('anaTokenAddress'),
+  anaGradeBanner: document.getElementById('anaGradeBanner'),
+  anaGradeBadge: document.getElementById('anaGradeBadge'),
+  anaVerdictHeadline: document.getElementById('anaVerdictHeadline'),
+  anaVerdictSummary: document.getElementById('anaVerdictSummary'),
+  anaLegScore: document.getElementById('anaLegScore'),
+  anaMomScore: document.getElementById('anaMomScore'),
+  anaExitScore: document.getElementById('anaExitScore'),
+  anaPlanEntry: document.getElementById('anaPlanEntry'),
+  anaPlan2x: document.getElementById('anaPlan2x'),
+  anaPlanStop: document.getElementById('anaPlanStop'),
+  anaPillarBreakdown: document.getElementById('anaPillarBreakdown'),
+  anaTrackBtn: document.getElementById('anaTrackBtn'),
+
+  // Projection Lab Elements
+  openWatchLabBtn: document.getElementById('openWatchLabBtn'),
+  navWatchBadge: document.getElementById('navWatchBadge'),
+  watchLabModalOverlay: document.getElementById('watchLabModalOverlay'),
+  watchLabCloseBtn: document.getElementById('watchLabCloseBtn'),
+  labTotalTracked: document.getElementById('labTotalTracked'),
+  labWinRate: document.getElementById('labWinRate'),
+  labAvgPnl: document.getElementById('labAvgPnl'),
+  watchChainFilter: document.getElementById('watchChainFilter'),
+  watchStatusFilter: document.getElementById('watchStatusFilter'),
+  watchRefreshBtn: document.getElementById('watchRefreshBtn'),
+  watchLabTableBody: document.getElementById('watchLabTableBody'),
+  watchLabEmptyState: document.getElementById('watchLabEmptyState')
 };
 
 // ==========================================================================
@@ -99,6 +142,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderSkeletons(8);
   connectSSE(state.chain);
   fetchLegitTokens();
+  fetchWatchTokens();
 });
 
 // ==========================================================================
@@ -571,6 +615,56 @@ function setupEventListeners() {
       fetchLegitTokens(true);
     });
   }
+
+  // 3D Growth Analysis Modal Controls
+  if (elements.mAnalyzeGrowthBtn) {
+    elements.mAnalyzeGrowthBtn.addEventListener('click', () => {
+      if (state.currentTokenForAnalysis) {
+        openAnalysisModal(state.currentTokenForAnalysis);
+      }
+    });
+  }
+  if (elements.anaCloseBtn) {
+    elements.anaCloseBtn.addEventListener('click', closeAnalysisModal);
+  }
+  if (elements.analysisModalOverlay) {
+    elements.analysisModalOverlay.addEventListener('click', (e) => {
+      if (e.target === elements.analysisModalOverlay) closeAnalysisModal();
+    });
+  }
+  if (elements.anaTrackBtn) {
+    elements.anaTrackBtn.addEventListener('click', trackCurrentToken);
+  }
+
+  // Projection Lab Controls
+  if (elements.openWatchLabBtn) {
+    elements.openWatchLabBtn.addEventListener('click', openWatchLab);
+  }
+  if (elements.watchLabCloseBtn) {
+    elements.watchLabCloseBtn.addEventListener('click', closeWatchLab);
+  }
+  if (elements.watchLabModalOverlay) {
+    elements.watchLabModalOverlay.addEventListener('click', (e) => {
+      if (e.target === elements.watchLabModalOverlay) closeWatchLab();
+    });
+  }
+  if (elements.watchChainFilter) {
+    elements.watchChainFilter.addEventListener('change', (e) => {
+      state.watchChain = e.target.value;
+      fetchWatchTokens(true);
+    });
+  }
+  if (elements.watchStatusFilter) {
+    elements.watchStatusFilter.addEventListener('change', (e) => {
+      state.watchStatus = e.target.value;
+      fetchWatchTokens(true);
+    });
+  }
+  if (elements.watchRefreshBtn) {
+    elements.watchRefreshBtn.addEventListener('click', () => {
+      fetchWatchTokens(true);
+    });
+  }
 }
 
 function attachRowEventListeners() {
@@ -601,6 +695,7 @@ function attachRowEventListeners() {
 // Inspection Drawer / Modal Display
 // ==========================================================================
 function openInspectModal(token) {
+  state.currentTokenForAnalysis = token;
   const sec = token.security || {};
   const score = sec.score ?? 50;
   const badge = sec.badge || 'CAUTION';
@@ -1019,3 +1114,417 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+
+// ==========================================================================
+// 3D Growth Analysis & Setup Engine
+// ==========================================================================
+async function openAnalysisModal(token) {
+  if (!token) return;
+  state.currentTokenForAnalysis = token;
+
+  // Set basic identity
+  elements.anaTokenSymbol.textContent = token.baseToken?.symbol || 'UNKNOWN';
+  elements.anaTokenName.textContent = token.baseToken?.name || '';
+  elements.anaChainBadge.textContent = (token.chainId || state.chain).toUpperCase();
+  elements.anaTokenAddress.textContent = token.baseToken?.address || token.pairAddress;
+
+  // Reset to loading state
+  elements.anaGradeBadge.textContent = '...';
+  elements.anaGradeBadge.className = 'grade-badge grade-B';
+  elements.anaVerdictHeadline.textContent = 'Calculating 3D Momentum & Exitability Matrix...';
+  elements.anaVerdictSummary.textContent = 'Evaluating defense legitimacy, buyer orderflow absorption, and liquidity pool depth.';
+  elements.anaLegScore.textContent = '--';
+  elements.anaMomScore.textContent = '--';
+  elements.anaExitScore.textContent = '--';
+  elements.anaPlanEntry.textContent = `$${token.priceUsd || '0.00'}`;
+  elements.anaPlan2x.textContent = '...';
+  elements.anaPlanStop.textContent = '...';
+  elements.anaPillarBreakdown.innerHTML = '<div style="padding: 1rem; color: var(--text-muted); text-align: center;">Running 3D analysis heuristics...</div>';
+
+  // Check if token is already in watch lab
+  const isAlreadyTracked = state.watchTokens.some((t) => t.pairAddress === token.pairAddress);
+  if (isAlreadyTracked) {
+    elements.anaTrackBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+      <span>Already in Projection Lab</span>
+    `;
+    elements.anaTrackBtn.disabled = true;
+  } else {
+    elements.anaTrackBtn.innerHTML = `
+      <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M12 5v14M5 12h14"></path>
+      </svg>
+      <span>+ Track in Projection Lab</span>
+    `;
+    elements.anaTrackBtn.disabled = false;
+  }
+
+  // Open modal
+  elements.analysisModalOverlay.classList.remove('hidden');
+
+  try {
+    const res = await fetch('/api/analysis', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token })
+    });
+
+    const data = await res.json();
+    if (!data.success || !data.analysis) {
+      throw new Error(data.error || 'Failed to analyze token');
+    }
+
+    const a = data.analysis;
+    state.currentAnalysis = a;
+
+    // Grade banner
+    const gradeLetter = a.grade ? a.grade[0] : 'B';
+    elements.anaGradeBadge.textContent = a.grade || 'B';
+    elements.anaGradeBadge.className = `grade-badge grade-${gradeLetter}`;
+    elements.anaVerdictHeadline.textContent = a.verdict?.headline || 'Analysis Complete';
+    elements.anaVerdictSummary.textContent = a.verdict?.summary || '';
+
+    // Tri-scores
+    elements.anaLegScore.textContent = `${a.dimensions.legitimacy.score}/100`;
+    elements.anaMomScore.textContent = `${a.dimensions.momentum.score}/100`;
+    elements.anaExitScore.textContent = `${a.dimensions.exitability.score}/100`;
+
+    // Mechanical Trade Plan
+    const p = a.tradePlan || {};
+    elements.anaPlanEntry.textContent = `$${p.entryPriceUsd !== undefined ? p.entryPriceUsd : token.priceUsd}`;
+    elements.anaPlan2x.textContent = `$${p.deRiskPriceTarget !== undefined ? p.deRiskPriceTarget : '0.00'}`;
+    elements.anaPlanStop.textContent = `$${p.invalidationStopPrice !== undefined ? p.invalidationStopPrice : '0.00'}`;
+
+    // Render 3 Pillars Factor Breakdown
+    elements.anaPillarBreakdown.innerHTML = renderPillarBreakdown(a);
+
+  } catch (err) {
+    console.error('Analysis error:', err);
+    elements.anaVerdictHeadline.textContent = 'Analysis Encountered an Error';
+    elements.anaVerdictSummary.textContent = err.message;
+  }
+}
+
+function closeAnalysisModal() {
+  elements.analysisModalOverlay.classList.add('hidden');
+}
+
+function renderPillarBreakdown(a) {
+  const leg = a.dimensions.legitimacy;
+  const mom = a.dimensions.momentum;
+  const exit = a.dimensions.exitability;
+
+  return `
+    <div class="pillar-section">
+      <div class="pillar-header">
+        <span class="pillar-header-title">🛡️ Pillar 1: Contract Legitimacy (35% Weight)</span>
+        <span class="pillar-header-score text-green">${leg.score}/100</span>
+      </div>
+      <div class="pillar-items-list">
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Honeypot / Sell Execution</span>
+          <span class="pillar-item-badge ${leg.details?.isHoneypot ? 'status-danger' : 'status-pass'}">
+            ${leg.details?.isHoneypot ? 'FAIL (Honeypot)' : 'PASS (Tradable)'}
+          </span>
+        </div>
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Mint Authority Revocation</span>
+          <span class="pillar-item-badge ${leg.details?.hasMintAuthority ? 'status-danger' : 'status-pass'}">
+            ${leg.details?.hasMintAuthority ? 'FAIL (Active Mint)' : 'PASS (Revoked)'}
+          </span>
+        </div>
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Freeze / Pause Authority</span>
+          <span class="pillar-item-badge ${leg.details?.hasFreezeAuthority ? 'status-danger' : 'status-pass'}">
+            ${leg.details?.hasFreezeAuthority ? 'FAIL (Can Freeze)' : 'PASS (Unpausable)'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillar-section">
+      <div class="pillar-header">
+        <span class="pillar-header-title">🚀 Pillar 2: Tradeable Momentum Setup (40% Weight)</span>
+        <span class="pillar-header-score text-green">${mom.score}/100</span>
+      </div>
+      <div class="pillar-items-list">
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Buyer Orderflow Share</span>
+          <span class="pillar-item-badge ${(mom.details?.buyTxnPct || 0) >= 60 ? 'status-pass' : 'status-warn'}">
+            ${mom.details?.buyTxnPct || 0}% Buys
+          </span>
+        </div>
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Volume Turnover Ratio</span>
+          <span class="pillar-item-badge ${mom.details?.isWashRisk ? 'status-danger' : 'status-pass'}">
+            ${mom.details?.turnoverRatio || 0}x ${mom.details?.isWashRisk ? '(Wash Risk)' : '(Healthy)'}
+          </span>
+        </div>
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Inception Age Sweet Spot</span>
+          <span class="pillar-item-badge ${(mom.details?.pairAgeMinutes || 0) <= 180 ? 'status-pass' : 'status-warn'}">
+            ${mom.details?.pairAgeMinutes !== null ? `${mom.details.pairAgeMinutes}m old` : 'Seasoned'}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div class="pillar-section">
+      <div class="pillar-header">
+        <span class="pillar-header-title">🚪 Pillar 3: Exitability &amp; Slippage Depth (25% Weight)</span>
+        <span class="pillar-header-score text-action">${exit.score}/100</span>
+      </div>
+      <div class="pillar-items-list">
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Pool Liquidity Depth</span>
+          <span class="pillar-item-badge ${(exit.details?.liquidityUsd || 0) >= 50000 ? 'status-pass' : 'status-warn'}">
+            $${formatCompact(exit.details?.liquidityUsd || 0)}
+          </span>
+        </div>
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Sell Tax Deduction</span>
+          <span class="pillar-item-badge ${(exit.details?.sellTax || 0) <= 5 ? 'status-pass' : 'status-danger'}">
+            ${exit.details?.sellTax || 0}% Exit Tax
+          </span>
+        </div>
+        <div class="pillar-item-row">
+          <span class="pillar-item-label">Top 10 Wallets Concentration</span>
+          <span class="pillar-item-badge ${(exit.details?.topHolderPct || 0) <= 40 ? 'status-pass' : 'status-warn'}">
+            ${exit.details?.topHolderPct || 0}% Supply
+          </span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+// Track button action
+async function trackCurrentToken() {
+  const token = state.currentTokenForAnalysis;
+  const analysis = state.currentAnalysis;
+  if (!token || !analysis) return;
+
+  elements.anaTrackBtn.disabled = true;
+  elements.anaTrackBtn.innerHTML = `
+    <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+      <path d="M12 2a10 10 0 0 1 10 10"></path>
+    </svg>
+    <span>Tracking in Lab...</span>
+  `;
+
+  try {
+    const res = await fetch('/api/watch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        pairAddress: token.pairAddress,
+        tokenAddress: token.baseToken?.address || token.pairAddress,
+        symbol: token.baseToken?.symbol || 'UNKNOWN',
+        name: token.baseToken?.name || '',
+        chainId: token.chainId || state.chain,
+        priceUsd: token.priceUsd,
+        analysis
+      })
+    });
+
+    const data = await res.json();
+    if (data.success) {
+      elements.anaTrackBtn.innerHTML = `
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="20 6 9 17 4 12"></polyline>
+        </svg>
+        <span>✓ Added to Projection Lab!</span>
+      `;
+      // Refresh watch tokens list & badges
+      await fetchWatchTokens(true);
+    } else {
+      alert(data.error || 'Failed to track token');
+      elements.anaTrackBtn.disabled = false;
+      elements.anaTrackBtn.textContent = '+ Track in Projection Lab';
+    }
+  } catch (err) {
+    alert(`Tracking failed: ${err.message}`);
+    elements.anaTrackBtn.disabled = false;
+    elements.anaTrackBtn.textContent = '+ Track in Projection Lab';
+  }
+}
+
+// ==========================================================================
+// Projection Lab Management
+// ==========================================================================
+async function fetchWatchTokens(renderTableOnFetch = false) {
+  try {
+    const url = `/api/watch?chain=${encodeURIComponent(state.watchChain)}&status=${encodeURIComponent(state.watchStatus)}`;
+    const res = await fetch(url);
+    if (!res.ok) return;
+
+    const data = await res.json();
+    if (data.success) {
+      state.watchTokens = data.tokens || [];
+      state.watchCount = data.total ?? state.watchTokens.length;
+
+      if (elements.navWatchBadge) {
+        elements.navWatchBadge.textContent = state.watchCount;
+      }
+
+      // Compute Projection Lab metrics
+      const total = state.watchTokens.length;
+      const wins = state.watchTokens.filter((t) => t.outcomeStatus === 'HIT_2X_DERISK').length;
+      const winRate = total > 0 ? Math.round((wins / total) * 100) : 0;
+      const avgPnl = total > 0 
+        ? (state.watchTokens.reduce((acc, t) => acc + (t.pnlPercent || 0), 0) / total).toFixed(1)
+        : '0.0';
+
+      if (elements.labTotalTracked) elements.labTotalTracked.textContent = total;
+      if (elements.labWinRate) elements.labWinRate.textContent = `${winRate}%`;
+      if (elements.labAvgPnl) {
+        elements.labAvgPnl.textContent = `${parseFloat(avgPnl) >= 0 ? '+' : ''}${avgPnl}%`;
+        elements.labAvgPnl.className = parseFloat(avgPnl) >= 0 ? 'metric-value text-green' : 'metric-value text-red';
+      }
+
+      if (renderTableOnFetch || !elements.watchLabModalOverlay.classList.contains('hidden')) {
+        renderWatchTable();
+      }
+    }
+  } catch (err) {
+    console.warn('[Projection Lab] Fetch error:', err.message);
+  }
+}
+
+function openWatchLab() {
+  elements.watchLabModalOverlay.classList.remove('hidden');
+  fetchWatchTokens(true);
+}
+
+function closeWatchLab() {
+  elements.watchLabModalOverlay.classList.add('hidden');
+}
+
+function renderWatchTable() {
+  if (!elements.watchLabTableBody) return;
+
+  const tokens = state.watchTokens;
+  if (!tokens || tokens.length === 0) {
+    elements.watchLabTableBody.innerHTML = '';
+    elements.watchLabEmptyState.classList.remove('hidden');
+    return;
+  }
+
+  elements.watchLabEmptyState.classList.add('hidden');
+
+  elements.watchLabTableBody.innerHTML = tokens.map((token) => {
+    const entryPrice = token.entryPriceUsd !== null ? Number(token.entryPriceUsd).toFixed(4) : '0.00';
+    const livePrice = token.currentPriceUsd !== null ? Number(token.currentPriceUsd).toFixed(4) : entryPrice;
+    const pnl = Number(token.pnlPercent) || 0;
+    const pnlSign = pnl >= 0 ? '+' : '';
+    const pnlClass = pnl >= 0 ? 'gain-pill' : 'gain-pill negative';
+
+    const grade = token.overallGrade || 'B';
+    const gradeLetter = grade[0];
+
+    // Status pill
+    let statusMarkup = '';
+    if (token.outcomeStatus === 'HIT_2X_DERISK') {
+      statusMarkup = `<span class="badge-pill badge-win">🎯 HIT 2X TARGET</span>`;
+    } else if (token.outcomeStatus === 'STOPPED_OUT') {
+      statusMarkup = `<span class="badge-pill badge-stopped">🛑 STOPPED OUT (-15%)</span>`;
+    } else {
+      statusMarkup = `<span class="badge-pill badge-tracking">⏱️ TRACKING</span>`;
+    }
+
+    const trackedTime = token.trackedAt ? new Date(token.trackedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '--';
+
+    return `
+      <tr data-watch-addr="${escapeHtml(token.pairAddress)}">
+        <td>
+          <div class="td-token-cell">
+            <span class="token-dex-badge">${escapeHtml(token.chainId || 'solana')}</span>
+            <div class="token-meta">
+              <div class="token-symbol-row">
+                <span class="token-symbol">${escapeHtml(token.symbol || 'UNKNOWN')}</span>
+              </div>
+              <div class="token-name-row">
+                <span>${escapeHtml(token.name || '')}</span>
+              </div>
+            </div>
+          </div>
+        </td>
+        <td class="th-num">
+          <span class="mono-val">$${entryPrice}</span>
+        </td>
+        <td class="th-num">
+          <span class="mono-val" style="color: #ffffff;">$${livePrice}</span>
+        </td>
+        <td class="th-num">
+          <span class="${pnlClass}">${pnlSign}${pnl.toFixed(2)}%</span>
+        </td>
+        <td class="th-score">
+          <span class="badge-pill grade-${gradeLetter}" style="font-size: 0.78rem; font-weight: 800;">
+            ${escapeHtml(grade)}
+          </span>
+        </td>
+        <td class="th-badge">
+          ${statusMarkup}
+        </td>
+        <td class="th-num">
+          <span class="mono-val" style="font-size: 0.8rem; color: var(--text-muted);">${trackedTime}</span>
+        </td>
+        <td class="th-action">
+          <div class="legit-actions-wrap">
+            <button class="btn-table-action" data-scan-watch="${escapeHtml(token.tokenAddress || token.pairAddress)}" data-chain="${escapeHtml(token.chainId || 'solana')}" title="Run Live Security Scan">
+              <svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              Scan
+            </button>
+            <a href="https://dexscreener.com/${escapeHtml(token.chainId || 'solana')}/${escapeHtml(token.pairAddress)}" target="_blank" rel="noopener noreferrer" class="btn-table-action" title="Open DEXScreener">
+              DEX
+            </a>
+            <button class="btn-table-action btn-table-delete" data-delete-watch="${escapeHtml(token.pairAddress)}" title="Remove from Projection Lab">
+              &times;
+            </button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  // Row event listeners
+  document.querySelectorAll('[data-scan-watch]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const addr = btn.dataset.scanWatch;
+      const chain = btn.dataset.chain || state.chain;
+      closeWatchLab();
+      elements.scanAddressInput.value = addr;
+      try {
+        const res = await fetch(`/api/scan?chain=${encodeURIComponent(chain)}&address=${encodeURIComponent(addr)}`);
+        const data = await res.json();
+        if (data.success && data.token) {
+          openInspectModal(data.token);
+        }
+      } catch (e) {
+        console.error('Scan error:', e);
+      }
+    });
+  });
+
+  document.querySelectorAll('[data-delete-watch]').forEach((btn) => {
+    btn.addEventListener('click', async () => {
+      const addr = btn.dataset.deleteWatch;
+      try {
+        const res = await fetch(`/api/watch/${encodeURIComponent(addr)}`, { method: 'DELETE' });
+        const data = await res.json();
+        if (data.success) {
+          fetchWatchTokens(true);
+        }
+      } catch (e) {
+        console.error('Delete error:', e);
+      }
+    });
+  });
+}
+

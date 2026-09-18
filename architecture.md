@@ -98,10 +98,29 @@ A clean token starts at 100 points. Penalties are deducted based on threat sever
 - Full backward compatibility for `--status-safe`, `--status-caution`, and `--status-trap`.
 - Features an interactive "Legit Vault" modal drawer with real-time counters, filtering, and deep-scan triggers.
 
-## 4. Platform Extension Roadmap
+### 3D Growth & Momentum Analysis Engine
+- **Service (`src/services/growthAnalyzer.js`)**: Evaluates token opportunities across three institutional pillars codified in `rulebook.md`:
+  1. **Legitimacy (Defense - 35%)**: Honeypot tests, revoked mint/freeze authorities, whale wallet decentralization.
+  2. **Tradeable Momentum (Offense - 40%)**: Lifecycle sweet spot (20m–48h window), buyer dominance (65/35 rule), organic volume turnover ratio, and crowd transaction density.
+  3. **Exitability (Survival - 25%)**: Absolute liquidity floor (≥$50,000 USD), liquidity-to-FDV cushion (≥10%), and live sell tape verification.
+- **Grades & Execution Plan**: Generates composite grade (`A+`, `B+`, `C`, `D`), qualitative setup verdict, and mechanical profit-taking plan:
+  - **Entry Price**: Captured at time of inspection.
+  - **2x De-Risk Target (+100%)**: Sell 50% at 2x target to extract 100% of original capital.
+  - **Invalidation Stop (-15%)**: Hard exit if price drops 15% from entry.
+  - **45-Minute Time Stop**: Cut at market if price chops sideways without volume.
+
+### Projection Watchlist Lab & Live PnL Validation
+- **Model (`TrackedToken`)**: Persists tracked tokens in SQLite via Prisma. Stores entry price, live price, live PnL %, overall setup grade, 3D component scores, and milestone outcome status (`TRACKING`, `HIT_2X_DERISK`, `STOPPED_OUT`).
+- **Real-Time PnL & Milestone Sync**: Background polling in `src/server.js` automatically queries live DEX prices for all tracked tokens, updates `pnlPercent`, and triggers status transitions (e.g. hitting 2x or stopping out).
+- **Projection Lab Drawer**: Accessible via the navbar button (`#openWatchLabBtn`). Features a summary ribbon (Active Tracked count, 2x Target Win Rate %, Average PnL %), chain & milestone status filters, live PnL pills, and 1-click inspection.
+
+## 4. Master Rulebook Reference
+All trading strategies, checklists, and algorithmic scoring weights are codified in [rulebook.md](file:///c:/Users/emman/OneDrive/Documents/apps/dexscreener/rulebook.md).
+
+## 5. Platform Extension Roadmap
 1. **Automated Alert Bot**: Hook into `database.saveLegitToken` to dispatch instant Discord webhooks or Telegram bot signals whenever a new 95+ score token is verified.
 2. **On-Chain Sandbox Simulation**: Fork EVM state via Hardhat/Anvil or Solana local validator to execute simulated buy-and-sell test transactions with slippage boundaries.
-3. **Portfolio & Watchlist Sync**: Allow users to pin tokens, create alerts for liquidity drains or authority transfers, and track paper trading returns.
+3. **Paper Trading Portfolio**: Expand the Projection Lab into an automated paper trading ledger with balance tracking and win/loss compounding analytics.
 
 ## 5. Error Envelope
 All error responses adhere to a consistent contract:

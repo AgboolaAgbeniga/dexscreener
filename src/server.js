@@ -9,6 +9,7 @@ const dexscreener = require('./services/dexscreener');
 const security = require('./services/security');
 const inspector = require('./services/inspector');
 const database = require('./services/database');
+const growthAnalyzer = require('./services/growthAnalyzer');
 const sse = require('./utils/sse');
 const cache = require('./utils/cache');
 
@@ -91,6 +92,12 @@ async function getEnrichedGainers(chainKey, minGain = 0) {
 
   // Cache enriched results for 30s
   await cache.set(cacheKey, enriched, 30);
+
+  // Sync live prices for any tokens actively being tracked in the Projection Lab
+  for (const pair of enriched) {
+    database.updateTrackedPrice(pair.pairAddress, pair.priceUsd).catch(() => {});
+  }
+
   return enriched.filter((t) => t.priceChange24h >= Number(minGain));
 }
 
@@ -302,6 +309,90 @@ app.delete('/api/legit/:identifier', async (req, res) => {
       code: 'DATABASE_ERROR',
       detail: err.message
     });
+  }
+});
+
+/**
+ * POST /api/analysis
+ * Run 3-Dimensional Growth & Momentum Analysis on a token
+ */
+app.post('/api/analysis', (req, res) => {
+  try {
+    const { token, security } = req.body;
+    if (!token) {
+      return res.status(400).json({ error: 'Token data required for analysis', code: 'INVALID_TOKEN' });
+    }
+    const result = growthAnalyzer.analyze(token, security || token.security || {});
+    res.json({
+      success: true,
+      analysis: result
+    });
+  } catch (err) {
+    console.error('[API /analysis] Error:', err);
+    res.status(500).json({ error: 'Analysis engine failed', detail: err.message });
+  }
+});
+
+/**
+ * GET /api/watch
+ * Retrieve all tracked tokens from the Projection Watch Lab with live stats
+ */
+app.get('/api/watch', async (req, res) => {
+  try {
+    const { chain, status, sortBy, sortOrder } = req.query;
+    const result = await database.getTrackedTokens({
+      chainId: chain,
+      status,
+      sortBy,
+      sortOrder
+    });
+    res.json({
+      success: true,
+      count: result.tokens.length,
+      stats: result.stats,
+      tokens: result.tokens
+    });
+  } catch (err) {
+    console.error('[API /watch] Error:', err);
+    res.status(500).json({ error: 'Failed to retrieve watched tokens', detail: err.message });
+  }
+});
+
+/**
+ * POST /api/watch
+ * Track a token in the Projection Watch Lab
+ */
+app.post('/api/watch', async (req, res) => {
+  try {
+    const { token, analysis } = req.body;
+    if (!token || !token.pairAddress) {
+      return res.status(400).json({ error: 'Valid token with pairAddress is required', code: 'INVALID_TOKEN' });
+    }
+    const record = await database.addTrackedToken(token, analysis || {});
+    res.json({
+      success: true,
+      tracked: record
+    });
+  } catch (err) {
+    console.error('[API POST /watch] Error:', err);
+    res.status(500).json({ error: 'Failed to track token', detail: err.message });
+  }
+});
+
+/**
+ * DELETE /api/watch/:identifier
+ * Remove a tracked token from the Projection Watch Lab
+ */
+app.delete('/api/watch/:identifier', async (req, res) => {
+  try {
+    const result = await database.removeTrackedToken(req.params.identifier);
+    res.json({
+      success: true,
+      deleted: result ? result.count : 0
+    });
+  } catch (err) {
+    console.error('[API DELETE /watch] Error:', err);
+    res.status(500).json({ error: 'Failed to delete tracked token', detail: err.message });
   }
 });
 

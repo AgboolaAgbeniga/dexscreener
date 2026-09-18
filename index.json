@@ -8,6 +8,11 @@
     "html": "public/index.html",
     "css": "public/style.css"
   },
+  "docs": {
+    "rulebook": "rulebook.md",
+    "architecture": "architecture.md",
+    "design": "DESIGN-cohere.md"
+  },
   "modules": {
     "config": {
       "chains": "src/config/chains.js",
